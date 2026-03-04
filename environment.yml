@@ -1,0 +1,11 @@
+name: transkun_env
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.10
+  - ffmpeg
+  - pandas
+  - pip
+  - pip:
+      - transkun
