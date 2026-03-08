@@ -11,6 +11,11 @@
 #SBATCH --error=/home/li5042/ondemand/data/sys/myjobs/projects/testing/transkun2/output/myjob.err
 
 #===========================================
+#run command: 
+# sbatch "/home/li5042/ondemand/data/sys/myjobs/projects/testing/pythonJob/quickQueue.job.sh"
+
+#===========================================
+
 #info: 
 # at least 16G for conda env setup and package installation
 
@@ -26,18 +31,34 @@
 # # SBATCH --mem=160G
 # # SBATCH --time=00:10:00
 
-#run command: 
-# sbatch "/home/li5042/ondemand/data/sys/myjobs/projects/testing/pythonJob/quickQueue.job.sh"
+
+#===========================================
+
+#README:
+#this is the entrance point for the job. 
+#for modularity and maintainability, we will call other scripts from this main job script.
+
+#===========================================
+#===========================================
 
 
 # ==========================================
 # 1. VARIABLES
 # ==========================================
+
+# Directory paths: 
 WORKING_DIR=/home/li5042/ondemand/data/sys/myjobs/projects/testing/transkun2
+#change sbatch output and error paths to the new working directory
 OUTPUT_DIR=$WORKING_DIR/output
+
+# data path: 
+MAESTRO_DIR="/depot/yunglu/data/transcription/maestro-v3.0.0"
+
+# environment setup
 VENV_DIR=$WORKING_DIR/venv
 ENV_FILE="environment.yml"
 INSTALL_LOG="$OUTPUT_DIR/install.log"
+
 
 cd $WORKING_DIR
 # Ensure output directory exists before writing logs
@@ -78,7 +99,7 @@ fi
 # ==========================================
 echo "=== Executing Rapid Validation Script ==="
 # Run the test script on 2 files to ensure the pipeline is functioning properly
-python full_evaluate_against_maestro.py
+python test_pipeline.py
 
 # Check if the quick test was successful before committing to the main run
 if [ $? -ne 0 ]; then
