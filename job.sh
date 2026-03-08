@@ -47,7 +47,7 @@
 # ==========================================
 
 # Directory paths: 
-WORKING_DIR=/home/li5042/ondemand/data/sys/myjobs/projects/testing/transkun2
+WORKING_DIR=. #/home/li5042/ondemand/data/sys/myjobs/projects/testing/transkun2
 #change sbatch output and error paths to the new working directory
 OUTPUT_DIR=$WORKING_DIR/output
 
