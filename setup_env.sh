@@ -39,19 +39,18 @@
 #   tail -f output/install.log
 # ==============================================================================
 
-# --- 1. Define Sensible Defaults ---
 # --- 1. Define Defaults ---
 SCRATCH_DIR=""
 ENVIRONMENT_FILE="environment.yml"
 VENV_DIR="./.venv"
 SRC_DIR=$(pwd)
 OUTPUT_DIR="./output"
-# Default log name (will be resolved to a full path below)
 INSTALL_LOG="install.log"
 REQ_FILE="requirements.txt"
+STATUS_LOG=""
+REBUILD_ENV=false # Default to updating, not rebuilding
 
-
-# Internal logging function with timestamps
+# Internal logging function
 log_info() {
     local msg="[$(date +'%Y-%m-%d %H:%M:%S')] $1"
     if [ -n "$STATUS_LOG" ]; then
@@ -71,6 +70,7 @@ while [[ "$#" -gt 0 ]]; do
         -l|--install-log) INSTALL_LOG="$2"; shift 2 ;;
         -t|--status-log) STATUS_LOG="$2"; shift 2 ;;
         -r|--req-file) REQ_FILE="$2"; shift 2 ;;
+        -b|--rebuild) REBUILD_ENV=true; shift 1 ;; # <-- NEW FLAG
         -h|--help) 
             echo "Usage: source setup_env.sh [OPTIONS]"
             return 0 
@@ -110,6 +110,14 @@ conda config --set solver libmamba
 eval "$(conda shell.bash hook)"
 
 # --- 6. Environment Synchronization ---
+
+# WHAT: Deletes the existing virtual environment folder if the user requested it.
+# WHY: Guarantees a completely clean slate, resolving corrupted module installations.
+if [ "$REBUILD_ENV" = true ] && [ -d "$VENV_DIR" ]; then
+    log_info "Rebuild flag detected. Nuking existing environment at $VENV_DIR..."
+    rm -rf "$VENV_DIR"
+fi
+
 if [ -f "$ENVIRONMENT_FILE" ]; then
     log_info "Syncing conda environment with $ENVIRONMENT_FILE..."
     # --quiet prevents the spinning progress bar from breaking the text file
