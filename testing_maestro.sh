@@ -36,7 +36,7 @@ log_msg "=== Phase 2: Light Evaluation Pipeline ==="
 python -u evaluate_maestro_light.py \   
     --maestro_dir "$MAESTRO_DATASET_PREPROCESSED" \
     --output_dir "$OUTPUT_DIR" \
-    --device cpu \   #ONLY DO THIS FOR TESTING -CPU IS VERY SLOW. Remove this line for GPU execution.
+    # --device cpu \   #ONLY DO THIS FOR TESTING -CPU IS VERY SLOW. Remove this line for GPU execution.
     >> "$STATUS_LOG" 2>> "$ERROR_LOG"
 
 

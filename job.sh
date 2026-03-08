@@ -5,14 +5,14 @@
 #SBATCH --ntasks=1 --cpus-per-task=16
 #SBATCH --nodes=1 --gpus-per-node=1 
 #SBATCH --mem=32G
-#SBATCH --time=00:10:00
+#SBATCH --time=00:20:00
 #SBATCH --job-name transkun_job
-#SBATCH --output=/home/li5042/ondemand/data/sys/myjobs/projects/testing/transkun2/output/myjob.out
-#SBATCH --error=/home/li5042/ondemand/data/sys/myjobs/projects/testing/transkun2/output/myjob.err
+#SBATCH --output=/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/output/myjob.out
+#SBATCH --error=/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/output/myjob.err
 
 #===========================================
 #run command: 
-# sbatch "/home/li5042/ondemand/data/sys/myjobs/projects/testing/pythonJob/quickQueue.job.sh"
+# sbatch "/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/job.sh"
 
 #===========================================
 
