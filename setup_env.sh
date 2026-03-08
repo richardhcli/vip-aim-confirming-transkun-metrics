@@ -33,6 +33,10 @@
 # - Explicitly evaluating the conda bash hook prevents "conda activate" errors 
 #   when this script is executed as a child process of a main SLURM job script.
 #
+# TIPS: 
+# Live progress (stream the clean text to your terminal in real-time) command:
+# run in a second terminal while your job is running:
+#   tail -f output/install.log
 # ==============================================================================
 
 # --- 1. Define Sensible Defaults ---
@@ -46,6 +50,17 @@ OUTPUT_DIR="./output"
 INSTALL_LOG="install.log"
 REQ_FILE="requirements.txt"
 
+
+# Internal logging function with timestamps
+log_info() {
+    local msg="[$(date +'%Y-%m-%d %H:%M:%S')] $1"
+    if [ -n "$STATUS_LOG" ]; then
+        echo "$msg" | tee -a "$STATUS_LOG"
+    else
+        echo "$msg"
+    fi
+}
+
 # --- 2. Parse Arguments ---
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -54,6 +69,7 @@ while [[ "$#" -gt 0 ]]; do
         -v|--venv-dir) VENV_DIR="$2"; shift 2 ;;
         -o|--output-dir) OUTPUT_DIR="$2"; shift 2 ;;
         -l|--install-log) INSTALL_LOG="$2"; shift 2 ;;
+        -t|--status-log) STATUS_LOG="$2"; shift 2 ;;
         -r|--req-file) REQ_FILE="$2"; shift 2 ;;
         -h|--help) 
             echo "Usage: source setup_env.sh [OPTIONS]"
@@ -69,65 +85,54 @@ done
 EXEC_DIR="$SRC_DIR"
 
 # --- 3. Resolve Paths & Directories ---
-# Ensure output directory exists before generating artifacts
 mkdir -p "$OUTPUT_DIR"
 
-# Resolve INSTALL_LOG: If it does not start with '/', treat it as a relative path
+# If INSTALL_LOG is relative, prepend OUTPUT_DIR
 if [[ "$INSTALL_LOG" != /* ]]; then
     INSTALL_LOG="${OUTPUT_DIR}/${INSTALL_LOG}"
 fi
-
-# Initialize or clear the log file
 > "$INSTALL_LOG" 
 
 # --- 4. Optional: Migrate to SCRATCH ---
 if [ -n "$SCRATCH_DIR" ]; then
-    echo -e "\t* Scratch directory provided. Migrating to $SCRATCH_DIR..."
+    log_info "Migrating workspace to $SCRATCH_DIR..."
     mkdir -p "$SCRATCH_DIR"
-    
-    # Sync workspace to scratch, excluding heavy/unnecessary directories
     rsync -a --exclude='.venv' --exclude='.git' "$SRC_DIR/" "$SCRATCH_DIR/"
-    
     EXEC_DIR="$SCRATCH_DIR"
-    cd "$EXEC_DIR" || { echo "Failed to enter $EXEC_DIR"; return 1; }
+    cd "$EXEC_DIR" || { log_info "CRITICAL: Failed to enter $EXEC_DIR"; return 1; }
 fi
 
-echo -e "\t* Initializing setup in $EXEC_DIR..."
+log_info "Initializing setup in $EXEC_DIR..."
 
 # --- 5. Conda Initialization ---
-# Load Conda module into the HPC environment
-module load conda
-
-# Use libmamba for faster dependency resolution
+module load anaconda
 conda config --set solver libmamba
-
-# Hook Conda functions into the current non-interactive shell
 eval "$(conda shell.bash hook)"
 
 # --- 6. Environment Synchronization ---
 if [ -f "$ENVIRONMENT_FILE" ]; then
-    echo -e "\t* Syncing conda environment with $ENVIRONMENT_FILE..."
-    # Update existing environment or create new one from file
-    conda env update --prefix "$VENV_DIR" --file "$ENVIRONMENT_FILE" --prune >> "$INSTALL_LOG" 2>&1
+    log_info "Syncing conda environment with $ENVIRONMENT_FILE..."
+    # --quiet prevents the spinning progress bar from breaking the text file
+    conda env update --prefix "$VENV_DIR" --file "$ENVIRONMENT_FILE" --prune --quiet >> "$INSTALL_LOG" 2>&1
     
     if [ $? -ne 0 ]; then
-        echo -e "\t* ERROR: Conda environment sync failed. Check $INSTALL_LOG"
+        log_info "ERROR: Conda environment sync failed. Check $INSTALL_LOG"
         return 1
     fi
 else
-    echo -e "\t* Notice: $ENVIRONMENT_FILE not found. Proceeding with base Python 3.10."
-    # Fallback to a base Python installation
-    conda create --yes --prefix "$VENV_DIR" python=3.10 >> "$INSTALL_LOG" 2>&1
+    log_info "Notice: $ENVIRONMENT_FILE not found. Creating base Python 3.10."
+    conda create --yes --prefix "$VENV_DIR" python=3.10 --quiet >> "$INSTALL_LOG" 2>&1
 fi
 
 # --- 7. Pip Requirements Setup ---
 if [ -f "$REQ_FILE" ]; then
-    echo -e "\t* Installing pip dependencies from $REQ_FILE..."
+    log_info "Installing pip dependencies from $REQ_FILE..."
     conda activate "$VENV_DIR"
-    pip install -r "$REQ_FILE" >> "$INSTALL_LOG" 2>&1
+    # --progress-bar off prevents pip's loading bar from spamming logs
+    pip install -r "$REQ_FILE" --progress-bar off >> "$INSTALL_LOG" 2>&1
     
     if [ $? -ne 0 ]; then
-        echo -e "\t* ERROR: Pip install failed. Check $INSTALL_LOG"
+        log_info "ERROR: Pip install failed. Check $INSTALL_LOG"
         conda deactivate
         return 1
     fi
@@ -135,9 +140,8 @@ if [ -f "$REQ_FILE" ]; then
 fi
 
 # --- 8. Final Activation ---
-# Leave the environment activated for the parent script
-echo -e "\t* Activating environment: $VENV_DIR"
+log_info "Activating finalized environment: $VENV_DIR"
 conda activate "$VENV_DIR"
 
-echo -e "\t* Environment setup completed successfully!"
+log_info "Environment setup completed successfully!"
 return 0
