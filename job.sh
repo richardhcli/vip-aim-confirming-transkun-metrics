@@ -41,22 +41,31 @@
 #===========================================
 #===========================================
 
+#!/bin/bash
 # ==========================================
 # 1. VARIABLES & LOGGING SETUP
 # ==========================================
 
 WORKING_DIR="." 
 OUTPUT_DIR="$WORKING_DIR/output"
+
+# Original Depot Data
 MAESTRO_DIR="/depot/yunglu/data/transcription/maestro-v3.0.0"
+
+# Scratch and Dataset Paths
+SCRATCH_DIR="/scratch/gilbreth/$USER/$SLURM_JOB_ID"
+MAESTRO_DATASET_PREPROCESSED="$SCRATCH_DIR/datasets/maestro_dataset"
+
+# Leave empty for in-place execution, or define a path to migrate code execution
+MIGRATE_DIR=""
 
 VENV_DIR="$WORKING_DIR/venv"
 ENV_FILE="environment.yml"
-
 INSTALL_LOG="install.log" 
 STATUS_LOG="$OUTPUT_DIR/job_status.log"
-ERROR_LOG="$OUTPUT_DIR/error.log"  # <-- NEW
+ERROR_LOG="$OUTPUT_DIR/error.log"
 
-cd "$WORKING_DIR" || exit 1
+cd "$WORKING_DIR" || { echo "Failed to enter working directory."; return 1 2>/dev/null || exit 1; }
 mkdir -p "$OUTPUT_DIR" 
 
 log_msg() {
@@ -64,7 +73,6 @@ log_msg() {
 }
 
 echo "========================================" > "$STATUS_LOG"
-# Initialize the error log so it exists even if empty
 > "$ERROR_LOG"
 
 log_msg "Starting Job $SLURM_JOB_ID"
@@ -72,50 +80,37 @@ log_msg "Starting Job $SLURM_JOB_ID"
 # ==========================================
 # 2. ENVIRONMENT SETUP
 # ==========================================
-# Notice the new --rebuild flag is included here! 
 source setup_env.sh \
+    --scratch-dir "$SCRATCH_DIR" \
+    --migrate-dir "$MIGRATE_DIR" \
     --output-dir "$OUTPUT_DIR" \
     --venv-dir "$VENV_DIR" \
     --env-file "$ENV_FILE" \
     --install-log "$INSTALL_LOG" \
-    --status-log "$STATUS_LOG" #\
-#    --rebuild 
+    --status-log "$STATUS_LOG"
 
 if [ $? -ne 0 ]; then
     log_msg "CRITICAL: Environment setup failed. Aborting job."
-    # If setup fails, we still try to teardown gracefully
     source teardown_env.sh
-    exit 1
+    # Safely halt: keeps terminal open if sourced, exits if run via sbatch
+    return 1 2>/dev/null || exit 1
 fi
 
 # ==========================================
-# 3. DATASET VERIFICATION
+# 3. EXECUTION PIPELINE
 # ==========================================
-log_msg "Verifying dataset..."
-if [ ! -d "$MAESTRO_DIR" ]; then
-    log_msg "ERROR: Maestro dataset not found at $MAESTRO_DIR."
-    source teardown_env.sh
-    exit 1
-fi
+log_msg "Initiating testing pipeline..."
 
-# ==========================================
-# 4. EXECUTION
-# ==========================================
-log_msg "=== Executing Rapid Validation Script ==="
-
-# WHAT: '>>' appends normal print statements to STATUS_LOG. '2>>' appends crashes to ERROR_LOG.
-# WHY: Keeps your status log clean while securely trapping any Python tracebacks.
-python test_pipeline.py >> "$STATUS_LOG" 2>> "$ERROR_LOG"
+source testing_maestro.sh
 
 if [ $? -ne 0 ]; then
-    log_msg "ERROR: Quick test pipeline failed. Check $ERROR_LOG for the Python traceback!"
+    log_msg "ERROR: Pipeline halted due to previous errors. Check $ERROR_LOG."
     source teardown_env.sh
-    exit 1
+    # Safely halt: keeps terminal open if sourced, exits if run via sbatch
+    return 1 2>/dev/null || exit 1
 fi
 
-log_msg "Job Completed Successfully."
-
 # ==========================================
-# 5. ENVIRONMENT TEARDOWN
+# 4. ENVIRONMENT TEARDOWN
 # ==========================================
 source teardown_env.sh
