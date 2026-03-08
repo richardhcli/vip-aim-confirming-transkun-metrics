@@ -58,18 +58,18 @@ def main():
             ]
             try:
                 print("  -> Transcribing audio to MIDI...")
-                # WHAT: Replaced DEVNULL with capture_output=True and text=True
-                # WHY: Traps the specific Transkun/PyTorch crash logs as readable text
                 result = subprocess.run(transcribe_cmd, check=True, capture_output=True, text=True)
-                
             except subprocess.CalledProcessError as e:
                 print(f"  -> ERROR: Transcription failed for {base_name}.")
-                # Print the exact stderr from the child process
                 print(f"  -> TRANSKUN CRASH LOG:\n{e.stderr}")
-                continue
+                
+                # WHAT: Replaced 'continue' with a hard exit.
+                # WHY: If transcription fails, the whole pipeline must halt and return 
+                # a non-zero exit code so the bash wrapper correctly triggers its error sequence.
+                sys.exit(1) 
         else:
             print("  -> Prediction exists. Skipping transcription.")
-            
+
         # --- TRANSKUN BUILT-IN EVALUATION ---
         eval_cmd = [
             "transkunEval",
