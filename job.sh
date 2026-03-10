@@ -86,7 +86,7 @@ export MPLCONFIGDIR="$XDG_CONFIG_HOME/matplotlib"
 # WHY: Relying on the script's internal defaults (for venv, logs, reqs) 
 # keeps this file pristine. We only need to pass the custom scratch directory 
 # to be used as the caching home-dir.
-source setup_env.sh --home-dir "$HOME_DIR_ENV"
+source setup_env.sh --home-dir "$HOME_DIR_ENV" --rebuild
 
 if [ $? -ne 0 ]; then
     log_msg "CRITICAL: Environment setup failed. Aborting job."

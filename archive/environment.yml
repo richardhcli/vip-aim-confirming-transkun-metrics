@@ -1,0 +1,17 @@
+name: transkun_env
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pandas          # Required for reading MAESTRO metadata
+  - scipy
+  - matplotlib
+  - seaborn
+  - tqdm
+  - tensorboard
+  - pytorch
+  - torchaudio
+  - cudatoolkit     # Ensure this matches your Gilbreth GPU nodes (e.g., 11.8 or 12.1)

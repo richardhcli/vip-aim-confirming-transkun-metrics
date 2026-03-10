@@ -1,10 +1,15 @@
 ncls
 pretty_midi
+scipy
+torchaudio
+torch
 mir_eval
 pydub
-torch-optimizer
+seaborn
+matplotlib
+tensorboard
+tqdm
+torch_optimizer
 sox
 soxr
 moduleconf
-# Install Transkun directly from GitHub
-git+https://github.com/Yujia-Yan/Transkun.git

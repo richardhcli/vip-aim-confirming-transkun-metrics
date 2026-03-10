@@ -1,0 +1,10 @@
+ncls
+pretty_midi
+mir_eval
+pydub
+torch-optimizer
+sox
+soxr
+moduleconf
+# Install Transkun directly from GitHub
+git+https://github.com/Yujia-Yan/Transkun.git
