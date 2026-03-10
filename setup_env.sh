@@ -1,146 +1,123 @@
 #!/bin/bash
 # ==============================================================================
 # Script Name: setup_env.sh
-# Description: A universal environment setup script for python using Conda and Pip.
-#              It handles optional migration to a high-capacity SCRATCH directory,
-#              in-place environment updates, and pip dependency fallback.
-#              Leaves the environment activated for the parent process.
+# Description: Universal, resilient environment setup for Conda and Pip.
+#              Designed to be SOURCED into a parent script, not executed directly.
+#
+# Core Responsibilities:
+#   1. Environment Sandboxing: Temporarily hijacks the $HOME variable during setup 
+#      to force all hidden dot-folders (.conda, .cache) into a designated target 
+#      directory, protecting user storage quotas on HPC clusters.
+#   2. Dynamic Resolution: Automatically maps configuration files (environment.yml) 
+#      and output logs relative to the specified working directory.
+#   3. Fault Tolerance: Implements retry loops for network timeouts during package sync.
+#   4. Diagnostic Validation: Probes the final environment to confirm hardware (GPU) 
+#      and framework (PyTorch/TensorFlow) bindings.
+#
 # Usage: source setup_env.sh [OPTIONS]
-# Options:
-#   -s, --scratch-dir PATH   Migrate execution to this SCRATCH path before setup.
-#   -e, --env-file PATH      Path to the Conda environment.yml (Default: environment.yml)
-#   -v, --venv-dir PATH      Path to build the virtual environment (Default: ./.venv)
-#   -l, --install-log PATH   Path to write installation logs (Default: install.log)
-#   -r, --req-file PATH      Path to the pip requirements.txt (Default: requirements.txt)
-#   -h, --help               Display this help message and exit.
-# Author: Li5042
-# 
 #
-# WHAT IT DOES:
-# 1. Argument Parsing: Reads user-defined paths or falls back to sensible defaults.
-# 2. Scratch Migration (Optional): If a scratch directory is provided, it uses 
-#    'rsync' to mirror the working directory to the scratch space, deliberately 
-#    ignoring bulky hidden directories like .git or existing .venv folders.
-# 3. Conda Setup: Evaluates the conda bash hook to allow subshell activation.
-#    It then checks for an environment.yml. If found, it updates the local 
-#    environment (--prune removes deleted packages). If not, it creates a base 
-#    Python 3.10 environment.
-# 4. Pip Setup: If a requirements.txt is found, it activates the new Conda 
-#    environment and installs the remaining dependencies via pip.
-#
-# WHY THIS APPROACH:
-# - Using 'rsync' instead of 'cp' prevents massive I/O bottlenecks on compute nodes.
-# - Explicitly evaluating the conda bash hook prevents "conda activate" errors 
-#   when this script is executed as a child process of a main SLURM job script.
-#
-# TIPS: 
-# Live progress (stream the clean text to your terminal in real-time) command:
-# run in a second terminal while your job is running:
-#   tail -f output/install.log
-# ==============================================================================
-#!/bin/bash
-# ==============================================================================
-# Script Name: setup_env.sh
-# Description: Resilient environment setup with shared caching and hardware validation.
+# Options & Default Dependencies:
+#   -w, --working-dir PATH   The root project path. (Default: Current Directory)
+#                            -> Influences defaults for -v, -o, -e, and -r.
+#   -h, --home-dir PATH      The target directory for .conda and .cache storage.
+#                            (Default: The system's actual $HOME variable).
+#                            *Tip: Set this to a SCRATCH drive on HPC clusters!
+#   -v, --venv-dir PATH      Path to build the virtual env. (Default: WORKING_DIR/.venv)
+#   -o, --output-dir PATH    Directory for logs. (Default: WORKING_DIR/output)
+#   -e, --env-file PATH      Path to environment config. (Default: WORKING_DIR/environment.yml)
+#   -r, --req-file PATH      Path to requirements. (Default: WORKING_DIR/requirements.txt)
+#   -l, --install-log PATH   Name of the verbose log file. (Default: OUTPUT_DIR/install.log)
+#   -b, --rebuild            Force removal and recreation of the Conda environment.
+#   --help                   Display this help message and return.
 # ==============================================================================
 
-# --- 1. Define Defaults ---
-SCRATCH_DIR=$SCRATCH
-MIGRATE_DIR=""
-ENVIRONMENT_FILE="environment.yml"
-VENV_DIR="./.venv"
-SRC_DIR=$(pwd)
-OUTPUT_DIR="./output"
+# ==========================================
+# Phase 1: Argument Parsing & Initialization
+# ==========================================
+
+# Initialize defaults based on the immediate execution context
+WORKING_DIR=$(pwd)
+HOME_DIR="$HOME"
+CACHE_DIR=""
+VENV_DIR=""
+OUTPUT_DIR=""
 INSTALL_LOG="install.log"
-REQ_FILE="requirements.txt"
-STATUS_LOG=""
+ENVIRONMENT_FILE=""
+REQ_FILE=""
 REBUILD_ENV=false
 
-# Internal logging function
-log_info() {
-    local msg="[$(date +'%Y-%m-%d %H:%M:%S')] $1"
-    if [ -n "$STATUS_LOG" ]; then
-        echo "$msg" | tee -a "$STATUS_LOG"
-    else
-        echo "$msg"
-    fi
-}
-
-# --- 2. Parse Arguments ---
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        -s|--scratch-dir) SCRATCH_DIR="$2"; shift 2 ;;
-        -m|--migrate-dir) MIGRATE_DIR="$2"; shift 2 ;;
-        -e|--env-file) ENVIRONMENT_FILE="$2"; shift 2 ;;
+        -w|--working-dir) WORKING_DIR="$2"; shift 2 ;;
+        -h|--home-dir) HOME_DIR="$2"; shift 2 ;;
         -v|--venv-dir) VENV_DIR="$2"; shift 2 ;;
         -o|--output-dir) OUTPUT_DIR="$2"; shift 2 ;;
-        -l|--install-log) INSTALL_LOG="$2"; shift 2 ;;
-        -t|--status-log) STATUS_LOG="$2"; shift 2 ;;
+        -e|--env-file) ENVIRONMENT_FILE="$2"; shift 2 ;;
         -r|--req-file) REQ_FILE="$2"; shift 2 ;;
+        -l|--install-log) INSTALL_LOG="$2"; shift 2 ;;
         -b|--rebuild) REBUILD_ENV=true; shift 1 ;;
-        -h|--help) echo "Usage: source setup_env.sh [OPTIONS]"; return 0 ;;
-        *) echo "Unknown parameter passed: $1"; return 1 ;;
+        --help) grep '^#' "$0" | sed 's/^# \?//' | head -n 35; return 0 2>/dev/null || exit 0 ;;
+        *) echo "Unknown parameter passed: $1"; return 1 2>/dev/null || exit 1 ;;
     esac
 done
 
-EXEC_DIR="$SRC_DIR"
+# Cascade defaults for unsupplied arguments based on the resolved WORKING_DIR
+VENV_DIR="${VENV_DIR:-$WORKING_DIR/.venv}"
+OUTPUT_DIR="${OUTPUT_DIR:-$WORKING_DIR/output}"
+ENVIRONMENT_FILE="${ENVIRONMENT_FILE:-$WORKING_DIR/environment.yml}"
+REQ_FILE="${REQ_FILE:-$WORKING_DIR/requirements.txt}"
 
-# --- 3. Resolve Paths & Optional Migration ---
 mkdir -p "$OUTPUT_DIR"
 if [[ "$INSTALL_LOG" != /* ]]; then INSTALL_LOG="${OUTPUT_DIR}/${INSTALL_LOG}"; fi
-> "$INSTALL_LOG" 
+> "$INSTALL_LOG"
 
-if [ -n "$MIGRATE_DIR" ]; then
-    log_info "Migrating workspace to $MIGRATE_DIR..."
-    mkdir -p "$MIGRATE_DIR"
-    rsync -a --exclude='.venv' --exclude='.git' "$SRC_DIR/" "$MIGRATE_DIR/"
-    EXEC_DIR="$MIGRATE_DIR"
-    cd "$EXEC_DIR" || { log_info "CRITICAL: Failed to enter $EXEC_DIR"; return 1 2>/dev/null || exit 1; }
-fi
+# Helper function to dual-route logs to console and the dedicated log file
+log_info() {
+    local msg="[$(date +'%Y-%m-%d %H:%M:%S')] $1"
+    echo "$msg" | tee -a "$INSTALL_LOG"
+}
 
-log_info "Initializing setup in $EXEC_DIR..."
+log_info "Initializing environment setup for project: $WORKING_DIR"
 
-# --- 4. Global Shared Cache Initialization & Routing ---
+# ==========================================
+# Phase 2: Environment Sandboxing
+# ==========================================
+# Hijack the environment's conception of "home" to force poorly-behaved solvers 
+# (like libmamba) and Python tools to cache their downloads in the parameterized HOME_DIR.
 
-# WHAT: Extract the user's root scratch directory from the provided SCRATCH_DIR.
-USER_SCRATCH_ROOT=$(echo "$SCRATCH_DIR" | cut -d'/' -f1-4) 
+export ORIGINAL_HOME="$HOME"
+export HOME="$HOME_DIR"
 
-# WHAT: Load the Anaconda module BEFORE setting our variables.
-# WHY: HPC modules often execute internal setup scripts that reset paths. 
-# Loading it first prevents Gilbreth from undoing our scratch rerouting.
-module load anaconda
+export XDG_CACHE_HOME="$HOME_DIR/.cache"
+export XDG_CONFIG_HOME="$HOME_DIR/.config"
+export XDG_DATA_HOME="$HOME_DIR/.local/share"
 
-# WHAT: The "Nuclear Option" for Linux directory routing (XDG standard).
-# WHY: Forces libmamba, Python, and other hidden tools to build their 
-# system .cache, .config, and .local folders in the scratch drive.
-export XDG_CACHE_HOME="$USER_SCRATCH_ROOT/.cache"
-export XDG_CONFIG_HOME="$USER_SCRATCH_ROOT/.config"
-export XDG_DATA_HOME="$USER_SCRATCH_ROOT/.local/share"
-
-# Reroute tool-specific caches directly into our new XDG cache home
-export CONDARC="$USER_SCRATCH_ROOT/.condarc"
-export CONDA_PKGS_DIRS="$USER_SCRATCH_ROOT/.conda/pkgs"
+export CONDARC="$HOME_DIR/.condarc"
+export CONDA_PKGS_DIRS="$HOME_DIR/.conda/pkgs"
 export PIP_CACHE_DIR="$XDG_CACHE_HOME/pip"
 export TORCH_HOME="$XDG_CACHE_HOME/torch"
 export HF_HOME="$XDG_CACHE_HOME/huggingface"
+export MPLCONFIGDIR="$XDG_CONFIG_HOME/matplotlib"
 
-# Create the standard folder hierarchies if they do not exist yet
-mkdir -p "$CONDA_PKGS_DIRS"
-mkdir -p "$PIP_CACHE_DIR"
-mkdir -p "$TORCH_HOME"
-mkdir -p "$HF_HOME"
+mkdir -p "$CONDA_PKGS_DIRS" "$PIP_CACHE_DIR" "$TORCH_HOME" "$HF_HOME" "$MPLCONFIGDIR"
+log_info "Sandboxed environment. Caches routed to: $HOME_DIR"
 
-log_info "Mounted overarching XDG and Conda directories at: $USER_SCRATCH_ROOT"
+# ==========================================
+# Phase 3: Conda Activation & Synchronization
+# ==========================================
 
-# --- 5. Conda Initialization ---
-module load anaconda
-conda config --set solver libmamba
+# Ensure Conda module is available if running on an HPC system
+if command -v module &> /dev/null; then
+    module load anaconda 2>/dev/null || true
+fi
+
+conda config --set solver libmamba >> "$INSTALL_LOG" 2>&1
 eval "$(conda shell.bash hook)"
 
-# --- 6. Environment Synchronization (With Retry Logic) ---
+# Handle explicit rebuild requests to prevent corrupted metadata
 if [ "$REBUILD_ENV" = true ] && [ -d "$VENV_DIR" ]; then
     log_info "Rebuild requested. Removing existing environment..."
-    conda env remove -y --prefix "$VENV_DIR" >/dev/null 2>&1
+    conda env remove -y --prefix "$VENV_DIR" >> "$INSTALL_LOG" 2>&1
     rm -rf "$VENV_DIR"
 fi
 
@@ -149,60 +126,78 @@ ENV_SUCCESS=false
 
 if [ -f "$ENVIRONMENT_FILE" ]; then
     for ((i=1; i<=MAX_ATTEMPTS; i++)); do
-        log_info "Syncing conda environment (Attempt $i/$MAX_ATTEMPTS)..."
-        
+        log_info "Syncing Conda environment (Attempt $i/$MAX_ATTEMPTS)..."
         if conda env update --prefix "$VENV_DIR" --file "$ENVIRONMENT_FILE" --prune --quiet >> "$INSTALL_LOG" 2>&1; then
             ENV_SUCCESS=true
             break
         elif [[ $i -lt $MAX_ATTEMPTS ]]; then
-            log_info "WARN: Env sync failed. Retrying in 5 seconds..."
+            log_info "Warning: Environment sync failed (likely network timeout). Retrying in 5 seconds..."
             sleep 5
         fi
     done
 else
-    log_info "Notice: $ENVIRONMENT_FILE not found. Creating base Python 3.10."
+    log_info "Notice: No environment.yml found. Creating base Python 3.10."
     conda create --yes --prefix "$VENV_DIR" python=3.10 --quiet >> "$INSTALL_LOG" 2>&1
     ENV_SUCCESS=true
 fi
 
 if [ "$ENV_SUCCESS" = false ]; then
-    log_info "ERROR: Failed to build Conda environment after $MAX_ATTEMPTS attempts."
+    log_info "CRITICAL: Failed to build Conda environment. Check $INSTALL_LOG"
+    export HOME="$ORIGINAL_HOME"
     return 1 2>/dev/null || exit 1
 fi
 
-# --- 7. Pip Requirements Setup ---
+# ==========================================
+# Phase 4: Pip Dependency Synchronization
+# ==========================================
+# Pip dependencies are installed second to respect the "Conda-First" dependency resolution rule.
+
 if [ -f "$REQ_FILE" ]; then
-    log_info "Installing pip dependencies..."
+    log_info "Installing Pip dependencies from requirements.txt..."
     conda activate "$VENV_DIR"
-    pip install -r "$REQ_FILE" --progress-bar off >> "$INSTALL_LOG" 2>&1
-    if [ $? -ne 0 ]; then
-        log_info "ERROR: Pip install failed."
+    if ! pip install -r "$REQ_FILE" --progress-bar off >> "$INSTALL_LOG" 2>&1; then
+        log_info "CRITICAL: Pip installation failed. Check $INSTALL_LOG"
         conda deactivate
+        export HOME="$ORIGINAL_HOME"
         return 1 2>/dev/null || exit 1
     fi
     conda deactivate
 fi
 
-# --- 8. Hardware & Framework Validation ---
-log_info "Validating environment configuration..."
+# ==========================================
+# Phase 5: Diagnostic Framework Validation
+# ==========================================
+# This step is read-only. It does not install anything. It probes the resulting 
+# environment to provide a clear log of what hardware bindings are active.
+
+log_info "Validating environment framework bindings..."
 conda activate "$VENV_DIR"
 
 PYTHON_CMD="$VENV_DIR/bin/python"
-PY_VER=$($PYTHON_CMD -c 'import sys; print(sys.version.split()[0])')
+PY_VER=$($PYTHON_CMD -c 'import sys; print(sys.version.split()[0])' 2>/dev/null || echo "unknown")
 
 if command -v nvidia-smi &>/dev/null && nvidia-smi -L | grep -q "GPU"; then
-    log_info "Hardware: GPU detected via nvidia-smi."
+    log_info "Hardware Validation: GPU detected on system via nvidia-smi."
 else
-    log_info "WARN: No GPU detected. PyTorch will fallback to CPU."
+    log_info "Hardware Validation: No GPU detected. ML frameworks will default to CPU."
 fi
 
 if $PYTHON_CMD -c "import torch" 2>/dev/null; then
     PT_VER=$($PYTHON_CMD -c "import torch; print(torch.__version__)" 2>/dev/null || echo "unknown")
-    CUDA_AVAIL=$($PYTHON_CMD -c "import torch; print(torch.cuda.is_available())" 2>/dev/null || echo "unknown")
-    log_info "Framework: Python $PY_VER | PyTorch $PT_VER | CUDA Available: $CUDA_AVAIL"
+    CUDA_AVAIL=$($PYTHON_CMD -c "import torch; print(torch.cuda.is_available())" 2>/dev/null || echo "False")
+    log_info "Framework Validation: Python $PY_VER | PyTorch $PT_VER | CUDA Available: $CUDA_AVAIL"
+elif $PYTHON_CMD -c "import tensorflow as tf" 2>/dev/null; then
+    TF_VER=$($PYTHON_CMD -c "import tensorflow as tf; print(tf.__version__)" 2>/dev/null || echo "unknown")
+    log_info "Framework Validation: Python $PY_VER | TensorFlow $TF_VER"
 else
-    log_info "Framework: Python $PY_VER | PyTorch not detected."
+    log_info "Framework Validation: Python $PY_VER | No deep learning frameworks installed."
 fi
 
+# ==========================================
+# Phase 6: Cleanup
+# ==========================================
+# Restore the original home directory to ensure the parent shell remains unaltered.
+export HOME="$ORIGINAL_HOME"
+
 log_info "Environment setup completed successfully!"
-return 0
+return 0 2>/dev/null || exit 0

@@ -33,6 +33,7 @@
 
 
 #===========================================
+# ==========================================
 
 #README:
 #this is the entrance point for the job. 
@@ -40,32 +41,21 @@
 
 #===========================================
 #===========================================
-
-#!/bin/bash
 # ==========================================
 # 1. VARIABLES & LOGGING SETUP
 # ==========================================
-
-WORKING_DIR="." 
+WORKING_DIR=$(pwd)
 OUTPUT_DIR="$WORKING_DIR/output"
 
-# Original Depot Data
+# Dataset Paths (Required by testing_maestro.sh)
 MAESTRO_DIR="/depot/yunglu/data/transcription/maestro-v3.0.0"
+HOME_DIR_ENV="/scratch/gilbreth/$USER" #/${SLURM_JOB_ID:-interactive_test}
+MAESTRO_DATASET_PREPROCESSED="$HOME_DIR_ENV/datasets/maestro_dataset"
 
-# Scratch and Dataset Paths
-SCRATCH_DIR="/scratch/gilbreth/$USER/$SLURM_JOB_ID"
-MAESTRO_DATASET_PREPROCESSED="$SCRATCH_DIR/datasets/maestro_dataset"
-
-# Leave empty for in-place execution, or define a path to migrate code execution
-MIGRATE_DIR=""
-
-VENV_DIR="$WORKING_DIR/venv"
-ENV_FILE="environment.yml"
-INSTALL_LOG="install.log" 
+# Logging Paths
 STATUS_LOG="$OUTPUT_DIR/job_status.log"
 ERROR_LOG="$OUTPUT_DIR/error.log"
 
-cd "$WORKING_DIR" || { echo "Failed to enter working directory."; return 1 2>/dev/null || exit 1; }
 mkdir -p "$OUTPUT_DIR" 
 
 log_msg() {
@@ -74,30 +64,38 @@ log_msg() {
 
 echo "========================================" > "$STATUS_LOG"
 > "$ERROR_LOG"
-
 log_msg "Starting Job $SLURM_JOB_ID"
 
 # ==========================================
-# 2. ENVIRONMENT SETUP
+# 2. RUN-TIME CACHE ROUTING (ML WEIGHTS)
 # ==========================================
-source setup_env.sh \
-    --scratch-dir "$SCRATCH_DIR" \
-    --migrate-dir "$MIGRATE_DIR" \
-    --output-dir "$OUTPUT_DIR" \
-    --venv-dir "$VENV_DIR" \
-    --env-file "$ENV_FILE" \
-    --install-log "$INSTALL_LOG" \
-    --status-log "$STATUS_LOG"
+# WHAT: Explicitly routes machine learning caches to the SCRATCH drive.
+# WHY: setup_env.sh safely restores the original $HOME variable when it finishes. 
+# We must explicitly export these variables so PyTorch and HuggingFace download 
+# their massive model weights into SCRATCH during inference.
+export XDG_CACHE_HOME="$HOME_DIR_ENV/.cache"
+export XDG_CONFIG_HOME="$HOME_DIR_ENV/.config"
+export TORCH_HOME="$XDG_CACHE_HOME/torch"
+export HF_HOME="$XDG_CACHE_HOME/huggingface"
+export MPLCONFIGDIR="$XDG_CONFIG_HOME/matplotlib"
+
+# ==========================================
+# 3. ENVIRONMENT SETUP
+# ==========================================
+# WHAT: Calls our universal setup script with minimal overrides.
+# WHY: Relying on the script's internal defaults (for venv, logs, reqs) 
+# keeps this file pristine. We only need to pass the custom scratch directory 
+# to be used as the caching home-dir.
+source setup_env.sh --home-dir "$HOME_DIR_ENV"
 
 if [ $? -ne 0 ]; then
     log_msg "CRITICAL: Environment setup failed. Aborting job."
-    source teardown_env.sh
-    # Safely halt: keeps terminal open if sourced, exits if run via sbatch
+    source teardown_env.sh 2>/dev/null
     return 1 2>/dev/null || exit 1
 fi
 
 # ==========================================
-# 3. EXECUTION PIPELINE
+# 4. EXECUTION PIPELINE
 # ==========================================
 log_msg "Initiating testing pipeline..."
 
@@ -105,12 +103,12 @@ source testing_maestro.sh
 
 if [ $? -ne 0 ]; then
     log_msg "ERROR: Pipeline halted due to previous errors. Check $ERROR_LOG."
-    source teardown_env.sh
-    # Safely halt: keeps terminal open if sourced, exits if run via sbatch
+    source teardown_env.sh 2>/dev/null
     return 1 2>/dev/null || exit 1
 fi
 
 # ==========================================
-# 4. ENVIRONMENT TEARDOWN
+# 5. ENVIRONMENT TEARDOWN
 # ==========================================
-source teardown_env.sh
+source teardown_env.sh 2>/dev/null
+log_msg "Job completed successfully."
