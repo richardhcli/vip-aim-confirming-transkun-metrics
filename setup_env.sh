@@ -44,7 +44,10 @@ OUTPUT_DIR=""
 INSTALL_LOG="install.log"
 ENVIRONMENT_FILE=""
 REQ_FILE=""
+
 REBUILD_ENV=false
+UPDATE_ENV=true #default to true: if environment.yml exists, we update/sync the environment. If false, we skip syncing and just create the env if it doesn't exist. This allows for faster iterations when we're sure the env is already in good shape and just want to reuse it without checking for updates.
+
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -56,6 +59,7 @@ while [[ "$#" -gt 0 ]]; do
         -r|--req-file) REQ_FILE="$2"; shift 2 ;;
         -l|--install-log) INSTALL_LOG="$2"; shift 2 ;;
         -b|--rebuild) REBUILD_ENV=true; shift 1 ;;
+        --noupdate) UPDATE_ENV=false; shift 1 ;;
         --help) grep '^#' "$0" | sed 's/^# \?//' | head -n 35; return 0 2>/dev/null || exit 0 ;;
         *) echo "Unknown parameter passed: $1"; return 1 2>/dev/null || exit 1 ;;
     esac
@@ -108,43 +112,53 @@ log_info "Sandboxed environment. Caches routed to: $HOME_DIR"
 
 # Ensure Conda module is available if running on an HPC system
 if command -v module &> /dev/null; then
+    #module purge # Clear any pre-loaded modules to prevent conflicts
+    #module purge does not work: unloads conda and conda fails...
     module load anaconda 2>/dev/null || true
 fi
 
 conda config --set solver libmamba >> "$INSTALL_LOG" 2>&1
 eval "$(conda shell.bash hook)"
 
+
 # Handle explicit rebuild requests to prevent corrupted metadata
 if [ "$REBUILD_ENV" = true ] && [ -d "$VENV_DIR" ]; then
-    log_info "Rebuild requested. Removing existing environment..."
+    log_info "Rebuild requested. Removing existing environment at $VENV_DIR..."
     conda env remove -y --prefix "$VENV_DIR" >> "$INSTALL_LOG" 2>&1
     rm -rf "$VENV_DIR"
 fi
 
-MAX_ATTEMPTS=3
-ENV_SUCCESS=false
+if ([ "$REBUILD_ENV" = true ] || [ -f "$ENVIRONMENT_FILE" ]) && ([ "$UPDATE_ENV" = true ]); then
+    
+    MAX_ATTEMPTS=3
+    ENV_SUCCESS=false
 
-if [ -f "$ENVIRONMENT_FILE" ]; then
-    for ((i=1; i<=MAX_ATTEMPTS; i++)); do
-        log_info "Syncing Conda environment (Attempt $i/$MAX_ATTEMPTS)..."
-        if conda env update --prefix "$VENV_DIR" --file "$ENVIRONMENT_FILE" --prune --quiet >> "$INSTALL_LOG" 2>&1; then
-            ENV_SUCCESS=true
-            break
-        elif [[ $i -lt $MAX_ATTEMPTS ]]; then
-            log_info "Warning: Environment sync failed (likely network timeout). Retrying in 5 seconds..."
-            sleep 5
-        fi
-    done
-else
-    log_info "Notice: No environment.yml found. Creating base Python 3.10."
-    conda create --yes --prefix "$VENV_DIR" python=3.10 --quiet >> "$INSTALL_LOG" 2>&1
-    ENV_SUCCESS=true
+    if [ -f "$ENVIRONMENT_FILE" ]; then
+        for ((i=1; i<=MAX_ATTEMPTS; i++)); do
+            log_info "Syncing Conda environment (Attempt $i/$MAX_ATTEMPTS)..."
+            if conda env update --prefix "$VENV_DIR" --file "$ENVIRONMENT_FILE" --prune --quiet >> "$INSTALL_LOG" 2>&1; then
+                ENV_SUCCESS=true
+                break
+            elif [[ $i -lt $MAX_ATTEMPTS ]]; then
+                log_info "Warning: Environment sync failed (likely network timeout). Retrying in 5 seconds..."
+                sleep 5
+            fi
+        done
+    else
+        log_info "Notice: No environment.yml found. Creating base Python 3.10."
+        conda create --yes --prefix "$VENV_DIR" python=3.10 --quiet >> "$INSTALL_LOG" 2>&1
+        ENV_SUCCESS=true
+    fi
+
+    if [ "$ENV_SUCCESS" = false ]; then
+        log_info "CRITICAL: Failed to build Conda environment. Check $INSTALL_LOG"
+        export HOME="$ORIGINAL_HOME"
+        return 1 2>/dev/null || exit 1
+    fi
 fi
 
-if [ "$ENV_SUCCESS" = false ]; then
-    log_info "CRITICAL: Failed to build Conda environment. Check $INSTALL_LOG"
-    export HOME="$ORIGINAL_HOME"
-    return 1 2>/dev/null || exit 1
+if ["$UPDATE_ENV" == false ]; then 
+    log_info "Update flag set to false. Skipping environment.yml sync. "
 fi
 
 # ==========================================

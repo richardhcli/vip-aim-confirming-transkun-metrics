@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1 --cpus-per-task=16
 #SBATCH --nodes=1 --gpus-per-node=1 
 #SBATCH --mem=32G
-#SBATCH --time=00:20:00
+#SBATCH --time=00:30:00
 #SBATCH --job-name transkun_job
 #SBATCH --output=/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/output/myjob.out
 #SBATCH --error=/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/output/myjob.err
@@ -44,6 +44,10 @@
 # ==========================================
 # 1. VARIABLES & LOGGING SETUP
 # ==========================================
+
+REBUILD_ENV=true
+UPDATE_ENV=true 
+
 WORKING_DIR=$(pwd)
 OUTPUT_DIR="$WORKING_DIR/output"
 
@@ -86,7 +90,20 @@ export MPLCONFIGDIR="$XDG_CONFIG_HOME/matplotlib"
 # WHY: Relying on the script's internal defaults (for venv, logs, reqs) 
 # keeps this file pristine. We only need to pass the custom scratch directory 
 # to be used as the caching home-dir.
-source setup_env.sh --home-dir "$HOME_DIR_ENV" --rebuild
+if [ "$REBUILD_ENV" = true ]; then
+    log_msg "Rebuild flag detected. Forcing environment rebuild."
+    source setup_env.sh --home-dir "$HOME_DIR_ENV" --rebuild
+else
+    if [ "$UPDATE_ENV" = false ]; then
+        log_msg "Update flag set to false. Skipping environment.yml sync. Will create environment if it doesn't exist, but won't check for updates."
+        source setup_env.sh --home-dir "$HOME_DIR_ENV" --noupdate
+    else
+        log_msg "Environment update enabled. Will sync environment with environment.yml if it exists."
+        source setup_env.sh --home-dir "$HOME_DIR_ENV"
+    fi
+fi
+
+
 
 if [ $? -ne 0 ]; then
     log_msg "CRITICAL: Environment setup failed. Aborting job."
