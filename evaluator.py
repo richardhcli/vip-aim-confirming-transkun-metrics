@@ -1,55 +1,63 @@
-import os
-import json
-import shutil
-import subprocess
+# import os
+# import sys
+# import argparse
+# import subprocess
+# import pandas as pd
+# from pathlib import Path
 
-def evaluate_maestro_subset(audio_files, ground_truth_midis, output_dir="transkun_output"):
-    """
-    Evaluates a subset of audio files against ground truth MIDIs using the Transkun model.
+# #example run: 
+# import warnings
+# warnings.filterwarnings("ignore", message=".*pkg_resources is deprecated.*")
+# warnings.filterwarnings("ignore", message=".*not a valid type 0 or type 1 MIDI file.*")
+
+# import pretty_midi
+# import numpy as np
+# import argparse
+# import mir_eval
+# import sys
+
+# sys.setrecursionlimit(10000)
+
+# def extract_custom_data(midi_file):
+#     """Extracts intervals, pitches, and custom metadata."""
+#     midi_data = pretty_midi.PrettyMIDI(midi_file)
+#     intervals = []
+#     pitches = []
     
-    Args:
-        audio_files (list): List of paths to the target.wav audio files.
-        ground_truth_midis (list): List of paths to the corresponding ground truth.mid files.
-        output_dir (str): The root directory where estimated and staged ground truth files will be saved.
+#     total_notes = 0
+#     duration = midi_data.get_end_time()
+
+#     for instrument in midi_data.instruments:
+#         total_notes += len(instrument.notes)
+#         for note in instrument.notes:
+#             intervals.append([note.start, note.end])
+#             pitches.append(pretty_midi.note_number_to_hz(note.pitch))
+
+#     if not intervals:
+#         intervals_arr, pitches_arr = np.empty((0, 2)), np.array([])
+#     else:
+#         intervals, pitches = zip(*sorted(zip(intervals, pitches), key=lambda x: x[0][0]))
+#         intervals_arr, pitches_arr = np.array(intervals), np.array(pitches)
         
-    Returns:
-        dict: A dictionary containing the accumulated evaluation metrics.
-    """
-    est_dir = os.path.join(output_dir, "estDIR")
-    gt_dir = os.path.join(output_dir, "groundTruthDIR")
-    
-    # Create flat directories to store paired files for evaluation
-    os.makedirs(est_dir, exist_ok=True)
-    os.makedirs(gt_dir, exist_ok=True)
+#     return intervals_arr, pitches_arr, len(midi_data.instruments), total_notes, duration
 
-    print(f"Starting transcription for {len(audio_files)} files...")
-    
-    for audio_path, gt_midi in zip(audio_files, ground_truth_midis):
-        # Generate a flat filename to ensure exact matching between estimation and ground truth folders
-        base_name = audio_path.replace('/', '_').replace('.wav', '')
-        est_midi = os.path.join(est_dir, f"{base_name}.mid")
-        gt_dest = os.path.join(gt_dir, f"{base_name}.mid")
+# def main():
+#     parser = argparse.ArgumentParser(description="Custom Scorer with Metadata.")
+#     parser.add_argument("--reference", required=True)
+#     parser.add_argument("--transcription", required=True)
+#     args = parser.parse_args()
 
-        # Copy the ground truth MIDI to the flat directory structure
-        shutil.copy(gt_midi, gt_dest)
+#     ref_inv, ref_pitch, ref_inst, ref_notes, ref_dur = extract_custom_data(args.reference)
+#     est_inv, est_pitch, est_inst, est_notes, est_dur = extract_custom_data(args.transcription)
 
-        # Transcribe using Transkun CLI if not already transcribed
-        if not os.path.exists(est_midi):
-            print(f"Transcribing: {audio_path}")
-            # Calls the default Transkun CLI with CUDA support
-            subprocess.run(['transkun', audio_path, est_midi, '--device', 'cuda'], check=True) 
-        else:
-            print(f"Skipping {audio_path}, already transcribed.")
+#     scores = mir_eval.transcription.evaluate(ref_inv, ref_pitch, est_inv, est_pitch)
 
-    json_output_path = os.path.join(output_dir, "metrics.json")
-    
-    print("Evaluating transcribed files against ground truth...")
-    
-    # Run transkunEval to accumulate metrics and save to JSON [1]
-    subprocess.run(['transkunEval', est_dir, gt_dir, '--outputJSON', json_output_path, '--computeDeviations'], check=True)
+#     print("--- Custom Metadata ---")
+#     print(f"Reference: {ref_inst} Instruments | {ref_notes} Notes | {ref_dur:.2f} Seconds")
+#     print(f"Prediction: {est_inst} Instruments | {est_notes} Notes | {est_dur:.2f} Seconds")
+#     print("\n--- Custom Scores ---")
+#     for key, value in scores.items():
+#         print(f"{key}: {value:.6f}")
 
-    # Load and return the generated metrics back to the main script
-    with open(json_output_path, 'r') as f:
-        metrics = json.load(f)
-    
-    return metrics
+# if __name__ == "__main__":
+#     main()

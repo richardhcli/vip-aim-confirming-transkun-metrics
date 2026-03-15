@@ -2,54 +2,267 @@
 FILE: MIDI-Unprocessed_11_R1_2009_06-09_ORIG_MID--AUDIO_11_R1_2009_11_R1_2009_07_WAV
 ========================================
 
---- TRANSKUN EVAL METRICS ---
+--- 1. TRANSKUN EVAL METRICS ---
+frame: [0.992344021387385, 0.3882036688137055, 0.5580851607875216, 0.3870444672671012]
+note: [1.0, 0.9736477115117892, 0.9866479269149684, 0.4033728170691973]
+note+velocity: [0.5527065527065527, 0.5381414701803051, 0.5453267744202389, 0.42129571347496825]
+note+offset: [0.21937321937321938, 0.21359223300970873, 0.21644413211524946, 0.8607184489546801]
+note+velocity+offset: [0.16096866096866097, 0.15672676837725383, 0.15881939564300776, 0.8640695711936546]
+nGT: 721.0
+nEst: 702.0
+deviation_onset_normality: 160.5261686977915
+deviation_offset_normality: 6.328232768356656
+pedal64frame: [0.9841484446132144, 0.7332817185427586, 0.8403929059558325, 0.7247221151648314]
+pedal64: [0.1095890410958904, 0.10810810810810811, 0.108843537414966, 0.7339083424476087]
+pedal64+offset: [0.0821917808219178, 0.08108108108108109, 0.0816326530612245, 0.9342771936336848]
+pedal64nGT: 74.0
+pedal64nEst: 73.0
+pedal67frame: [0.0, 0.0, 0.0, 0.0]
+pedal67: [0.0, 0.0, 0.0, 0.0]
+pedal67+offset: [0.0, 0.0, 0.0, 0.0]
+pedal67nGT: 2.0
+pedal67nEst: 0.0
+/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/transkun_eval_fork.py:178: FutureWarning: As of SciPy 1.17, users must choose a p-value calculation method by providing the `method` parameter. `method='interpolate'` interpolates the p-value from pre-calculated tables; `method` may also be an instance of `MonteCarloMethod` to approximate the p-value via Monte Carlo simulation. When `method` is specified, the result object will include a `pvalue` attribute and not attributes `critical_value`, `significance_level`, or `fit_result`. Beginning in 1.19.0, these other attributes will no longer be available, and a p-value will always be computed according to one of the available `method` options.
+  onset_result = scipy.stats.anderson(dev_onset)
+/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/transkun_eval_fork.py:179: FutureWarning: As of SciPy 1.17, users must choose a p-value calculation method by providing the `method` parameter. `method='interpolate'` interpolates the p-value from pre-calculated tables; `method` may also be an instance of `MonteCarloMethod` to approximate the p-value via Monte Carlo simulation. When `method` is specified, the result object will include a `pvalue` attribute and not attributes `critical_value`, `significance_level`, or `fit_result`. Beginning in 1.19.0, these other attributes will no longer be available, and a p-value will always be computed according to one of the available `method` options.
+  offset_result = scipy.stats.anderson(dev_offset)
 
 
---- CUSTOM SCORING.PY METRICS ---
-Custom Scoring Error: /scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/.venv/bin/python: can't open file '/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/scoring.py': [Errno 2] No such file or directory
+--- 2. STANDARD MIR_EVAL METRICS ---
+--- Custom Metadata ---
+Reference : 1 Inst | 721 Notes | 163.98s
+Prediction: 1 Inst | 702 Notes | 163.62s
+
+--- Custom Scores ---
+Precision: 0.529915
+Recall: 0.515950
+F-measure: 0.522839
+Average_Overlap_Ratio: 0.727705
+Precision_no_offset: 1.000000
+Recall_no_offset: 0.973648
+F-measure_no_offset: 0.986648
+Average_Overlap_Ratio_no_offset: 0.537768
+Onset_Precision: 1.000000
+Onset_Recall: 0.973648
+Onset_F-measure: 0.986648
+Offset_Precision: 0.675214
+Offset_Recall: 0.657420
+Offset_F-measure: 0.666198
 
 
 ========================================
 FILE: MIDI-Unprocessed_02_R1_2009_03-06_ORIG_MID--AUDIO_02_R1_2009_02_R1_2009_04_WAV
 ========================================
 
---- TRANSKUN EVAL METRICS ---
+--- 1. TRANSKUN EVAL METRICS ---
+frame: [0.9983915921546886, 0.3045539017360225, 0.466733345759395, 0.30440454989909]
+note: [0.9960886571056062, 0.9757343550446999, 0.9858064516129031, 0.38163362241463994]
+note+velocity: [0.6910039113428944, 0.6768837803320562, 0.6838709677419355, 0.38604613072142746]
+note+offset: [0.10299869621903521, 0.10089399744572158, 0.10193548387096775, 0.9170985392504869]
+note+velocity+offset: [0.07040417209908735, 0.06896551724137931, 0.06967741935483869, 0.9106617797855628]
+nGT: 783.0
+nEst: 767.0
+deviation_onset_normality: 147.06180356956293
+deviation_offset_normality: 4.05948358658361
+pedal64frame: [0.9997289959456195, 0.8200855025052416, 0.9010404705973103, 0.8199032325485606]
+pedal64: [0.13513513513513514, 0.12195121951219512, 0.1282051282051282, 0.9626760704186059]
+pedal64+offset: [0.13513513513513514, 0.12195121951219512, 0.1282051282051282, 0.9626760704186059]
+pedal64nGT: 41.0
+pedal64nEst: 37.0
+pedal67frame: [0.0, 0.0, 0.0, 0.0]
+pedal67: [0.0, 0.0, 0.0, 0.0]
+pedal67+offset: [0.0, 0.0, 0.0, 0.0]
+pedal67nGT: 10.0
+pedal67nEst: 0.0
+100%|██████████| 1/1 [00:01<00:00,  1.35s/it]
+100%|██████████| 1/1 [00:01<00:00,  1.54s/it]
+/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/transkun_eval_fork.py:178: FutureWarning: As of SciPy 1.17, users must choose a p-value calculation method by providing the `method` parameter. `method='interpolate'` interpolates the p-value from pre-calculated tables; `method` may also be an instance of `MonteCarloMethod` to approximate the p-value via Monte Carlo simulation. When `method` is specified, the result object will include a `pvalue` attribute and not attributes `critical_value`, `significance_level`, or `fit_result`. Beginning in 1.19.0, these other attributes will no longer be available, and a p-value will always be computed according to one of the available `method` options.
+  onset_result = scipy.stats.anderson(dev_onset)
+/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/transkun_eval_fork.py:179: FutureWarning: As of SciPy 1.17, users must choose a p-value calculation method by providing the `method` parameter. `method='interpolate'` interpolates the p-value from pre-calculated tables; `method` may also be an instance of `MonteCarloMethod` to approximate the p-value via Monte Carlo simulation. When `method` is specified, the result object will include a `pvalue` attribute and not attributes `critical_value`, `significance_level`, or `fit_result`. Beginning in 1.19.0, these other attributes will no longer be available, and a p-value will always be computed according to one of the available `method` options.
+  offset_result = scipy.stats.anderson(dev_offset)
 
 
---- CUSTOM SCORING.PY METRICS ---
-Custom Scoring Error: /scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/.venv/bin/python: can't open file '/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/scoring.py': [Errno 2] No such file or directory
+--- 2. STANDARD MIR_EVAL METRICS ---
+--- Custom Metadata ---
+Reference : 1 Inst | 783 Notes | 141.20s
+Prediction: 1 Inst | 767 Notes | 141.19s
+
+--- Custom Scores ---
+Precision: 0.341591
+Recall: 0.334610
+F-measure: 0.338065
+Average_Overlap_Ratio: 0.856201
+Precision_no_offset: 0.996089
+Recall_no_offset: 0.975734
+F-measure_no_offset: 0.985806
+Average_Overlap_Ratio_no_offset: 0.570169
+Onset_Precision: 0.996089
+Onset_Recall: 0.975734
+Onset_F-measure: 0.985806
+Offset_Precision: 0.576271
+Offset_Recall: 0.564496
+Offset_F-measure: 0.570323
 
 
 ========================================
 FILE: MIDI-Unprocessed_01_R1_2006_01-09_ORIG_MID--AUDIO_01_R1_2006_04_Track04_wav
 ========================================
 
---- TRANSKUN EVAL METRICS ---
+--- 1. TRANSKUN EVAL METRICS ---
+frame: [0.9862036741089867, 0.46818385641496496, 0.6349403163402545, 0.4651374031045808]
+note: [0.9884863802302724, 0.9649122807017544, 0.9765570814259953, 0.4749585382598569]
+note+velocity: [0.6596461668070767, 0.6439144736842105, 0.6516853932584269, 0.45160810339136415]
+note+offset: [0.2656557146868857, 0.2593201754385965, 0.2624497156332362, 0.8699224839917337]
+note+velocity+offset: [0.17551249648975006, 0.17132675438596492, 0.17339436815092246, 0.8634767830457484]
+nGT: 3648.0
+nEst: 3561.0
+deviation_onset_normality: 956.2947655647149
+deviation_offset_normality: 70.4243371533912
+pedal64frame: [0.9558989330991715, 0.7084268805521958, 0.8137643407979037, 0.6860056300661793]
+pedal64: [0.1975806451612903, 0.14244186046511628, 0.16554054054054054, 0.9228010190913766]
+pedal64+offset: [0.18951612903225806, 0.13662790697674418, 0.1587837837837838, 0.9330408125029355]
+pedal64nGT: 344.0
+pedal64nEst: 248.0
+pedal67frame: [0.9999999983310153, 0.023108754167282003, 0.045173602655937464, 0.023108754167282003]
+pedal67: [0.0, 0.0, 0.0, 0.0]
+pedal67+offset: [0.0, 0.0, 0.0, 0.0]
+pedal67nGT: 39.0
+pedal67nEst: 1.0
+100%|██████████| 1/1 [00:33<00:00, 33.39s/it]
+100%|██████████| 1/1 [00:33<00:00, 33.50s/it]
+/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/transkun_eval_fork.py:178: FutureWarning: As of SciPy 1.17, users must choose a p-value calculation method by providing the `method` parameter. `method='interpolate'` interpolates the p-value from pre-calculated tables; `method` may also be an instance of `MonteCarloMethod` to approximate the p-value via Monte Carlo simulation. When `method` is specified, the result object will include a `pvalue` attribute and not attributes `critical_value`, `significance_level`, or `fit_result`. Beginning in 1.19.0, these other attributes will no longer be available, and a p-value will always be computed according to one of the available `method` options.
+  onset_result = scipy.stats.anderson(dev_onset)
+/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/transkun_eval_fork.py:179: FutureWarning: As of SciPy 1.17, users must choose a p-value calculation method by providing the `method` parameter. `method='interpolate'` interpolates the p-value from pre-calculated tables; `method` may also be an instance of `MonteCarloMethod` to approximate the p-value via Monte Carlo simulation. When `method` is specified, the result object will include a `pvalue` attribute and not attributes `critical_value`, `significance_level`, or `fit_result`. Beginning in 1.19.0, these other attributes will no longer be available, and a p-value will always be computed according to one of the available `method` options.
+  offset_result = scipy.stats.anderson(dev_offset)
 
 
---- CUSTOM SCORING.PY METRICS ---
-Custom Scoring Error: /scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/.venv/bin/python: can't open file '/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/scoring.py': [Errno 2] No such file or directory
+--- 2. STANDARD MIR_EVAL METRICS ---
+--- Custom Metadata ---
+Reference : 1 Inst | 3648 Notes | 479.73s
+Prediction: 1 Inst | 3561 Notes | 478.76s
+
+--- Custom Scores ---
+Precision: 0.634092
+Recall: 0.618969
+F-measure: 0.626439
+Average_Overlap_Ratio: 0.804922
+Precision_no_offset: 0.988486
+Recall_no_offset: 0.964912
+F-measure_no_offset: 0.976557
+Average_Overlap_Ratio_no_offset: 0.665662
+Onset_Precision: 0.991856
+Onset_Recall: 0.968202
+Onset_F-measure: 0.979886
+Offset_Precision: 0.747262
+Offset_Recall: 0.729441
+Offset_F-measure: 0.738244
 
 
 ========================================
 FILE: MIDI-Unprocessed_24_R1_2006_01-05_ORIG_MID--AUDIO_24_R1_2006_03_Track03_wav
 ========================================
 
---- TRANSKUN EVAL METRICS ---
+--- 1. TRANSKUN EVAL METRICS ---
+frame: [0.9843102000237326, 0.428545570503995, 0.5971193734314654, 0.42563804939842076]
+note: [0.9864864864864865, 0.9412068076328004, 0.9633148588017947, 0.4550040711315346]
+note+velocity: [0.6708108108108108, 0.6400206291903043, 0.6550541039852203, 0.42942379610619297]
+note+offset: [0.24756756756756756, 0.2362042289840124, 0.24175244127738188, 0.8405903782350331]
+note+velocity+offset: [0.14675675675675676, 0.14002062919030428, 0.14330958036421218, 0.8272366190408036]
+nGT: 3878.0
+nEst: 3700.0
+deviation_onset_normality: 1027.671368869229
+deviation_offset_normality: 88.07152137136154
+pedal64frame: [0.9879941152359757, 0.6587314851459467, 0.7904447841277854, 0.6535003724966725]
+pedal64: [0.1829787234042553, 0.13109756097560976, 0.152753108348135, 0.9322451517150817]
+pedal64+offset: [0.1829787234042553, 0.13109756097560976, 0.152753108348135, 0.9322451517150817]
+pedal64nGT: 328.0
+pedal64nEst: 235.0
+pedal67frame: [0.0, 0.0, 0.0, 0.0]
+pedal67: [0.0, 0.0, 0.0, 0.0]
+pedal67+offset: [0.0, 0.0, 0.0, 0.0]
+pedal67nGT: 63.0
+pedal67nEst: 0.0
+100%|██████████| 1/1 [03:03<00:00, 183.06s/it]
+100%|██████████| 1/1 [03:03<00:00, 183.33s/it]
+/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/transkun_eval_fork.py:178: FutureWarning: As of SciPy 1.17, users must choose a p-value calculation method by providing the `method` parameter. `method='interpolate'` interpolates the p-value from pre-calculated tables; `method` may also be an instance of `MonteCarloMethod` to approximate the p-value via Monte Carlo simulation. When `method` is specified, the result object will include a `pvalue` attribute and not attributes `critical_value`, `significance_level`, or `fit_result`. Beginning in 1.19.0, these other attributes will no longer be available, and a p-value will always be computed according to one of the available `method` options.
+  onset_result = scipy.stats.anderson(dev_onset)
+/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/transkun_eval_fork.py:179: FutureWarning: As of SciPy 1.17, users must choose a p-value calculation method by providing the `method` parameter. `method='interpolate'` interpolates the p-value from pre-calculated tables; `method` may also be an instance of `MonteCarloMethod` to approximate the p-value via Monte Carlo simulation. When `method` is specified, the result object will include a `pvalue` attribute and not attributes `critical_value`, `significance_level`, or `fit_result`. Beginning in 1.19.0, these other attributes will no longer be available, and a p-value will always be computed according to one of the available `method` options.
+  offset_result = scipy.stats.anderson(dev_offset)
 
 
---- CUSTOM SCORING.PY METRICS ---
-Custom Scoring Error: /scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/.venv/bin/python: can't open file '/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/scoring.py': [Errno 2] No such file or directory
+--- 2. STANDARD MIR_EVAL METRICS ---
+--- Custom Metadata ---
+Reference : 1 Inst | 3878 Notes | 430.18s
+Prediction: 1 Inst | 3700 Notes | 429.77s
+
+--- Custom Scores ---
+Precision: 0.650000
+Recall: 0.620165
+F-measure: 0.634732
+Average_Overlap_Ratio: 0.757206
+Precision_no_offset: 0.986486
+Recall_no_offset: 0.941207
+F-measure_no_offset: 0.963315
+Average_Overlap_Ratio_no_offset: 0.634862
+Onset_Precision: 0.988919
+Onset_Recall: 0.943528
+Onset_F-measure: 0.965690
+Offset_Precision: 0.755946
+Offset_Recall: 0.721248
+Offset_F-measure: 0.738189
 
 
 ========================================
 FILE: MIDI-Unprocessed_11_R1_2009_06-09_ORIG_MID--AUDIO_11_R1_2009_11_R1_2009_08_WAV
 ========================================
 
---- TRANSKUN EVAL METRICS ---
+--- 1. TRANSKUN EVAL METRICS ---
+frame: [0.9875051576583396, 0.3538080759493242, 0.5209630249931464, 0.35223123816139373]
+note: [0.9886831275720165, 0.9467980295566503, 0.9672873678912934, 0.3855389711225928]
+note+velocity: [0.511059670781893, 0.4894088669950739, 0.5, 0.3602643677625083]
+note+offset: [0.15303497942386832, 0.14655172413793102, 0.14972320080523402, 0.8421419697838329]
+note+velocity+offset: [0.05915637860082305, 0.05665024630541872, 0.05787619526925012, 0.823617842369894]
+nGT: 4060.0
+nEst: 3888.0
+deviation_onset_normality: 961.9128673819005
+deviation_offset_normality: 64.87779021169672
+pedal64frame: [0.9844105724023114, 0.7269411882970102, 0.836308008343594, 0.7186678385172939]
+pedal64: [0.12385321100917432, 0.108, 0.11538461538461538, 0.8890030886255464]
+pedal64+offset: [0.11926605504587157, 0.104, 0.11111111111111112, 0.918746464326239]
+pedal64nGT: 250.0
+pedal64nEst: 218.0
+pedal67frame: [0.0, 0.0, 0.0, 0.0]
+pedal67: [0.0, 0.0, 0.0, 0.0]
+pedal67+offset: [0.0, 0.0, 0.0, 0.0]
+pedal67nGT: 12.0
+pedal67nEst: 1.0
+100%|██████████| 1/1 [02:00<00:00, 120.20s/it]
+100%|██████████| 1/1 [02:00<00:00, 120.49s/it]
+/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/transkun_eval_fork.py:178: FutureWarning: As of SciPy 1.17, users must choose a p-value calculation method by providing the `method` parameter. `method='interpolate'` interpolates the p-value from pre-calculated tables; `method` may also be an instance of `MonteCarloMethod` to approximate the p-value via Monte Carlo simulation. When `method` is specified, the result object will include a `pvalue` attribute and not attributes `critical_value`, `significance_level`, or `fit_result`. Beginning in 1.19.0, these other attributes will no longer be available, and a p-value will always be computed according to one of the available `method` options.
+  onset_result = scipy.stats.anderson(dev_onset)
+/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/transkun_eval_fork.py:179: FutureWarning: As of SciPy 1.17, users must choose a p-value calculation method by providing the `method` parameter. `method='interpolate'` interpolates the p-value from pre-calculated tables; `method` may also be an instance of `MonteCarloMethod` to approximate the p-value via Monte Carlo simulation. When `method` is specified, the result object will include a `pvalue` attribute and not attributes `critical_value`, `significance_level`, or `fit_result`. Beginning in 1.19.0, these other attributes will no longer be available, and a p-value will always be computed according to one of the available `method` options.
+  offset_result = scipy.stats.anderson(dev_offset)
 
 
---- CUSTOM SCORING.PY METRICS ---
-Custom Scoring Error: /scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/.venv/bin/python: can't open file '/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/scoring.py': [Errno 2] No such file or directory
+--- 2. STANDARD MIR_EVAL METRICS ---
+--- Custom Metadata ---
+Reference : 1 Inst | 4060 Notes | 522.09s
+Prediction: 1 Inst | 3888 Notes | 522.07s
+
+--- Custom Scores ---
+Precision: 0.556070
+Recall: 0.532512
+F-measure: 0.544036
+Average_Overlap_Ratio: 0.700045
+Precision_no_offset: 0.988683
+Recall_no_offset: 0.946798
+F-measure_no_offset: 0.967287
+Average_Overlap_Ratio_no_offset: 0.559217
+Onset_Precision: 0.991512
+Onset_Recall: 0.949507
+Onset_F-measure: 0.970055
+Offset_Precision: 0.699331
+Offset_Recall: 0.669704
+Offset_F-measure: 0.684197
 
 

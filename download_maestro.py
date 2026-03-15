@@ -6,6 +6,13 @@ import zipfile
 import urllib.request
 from pathlib import Path
 
+#Note:
+#from https://github.com/Yujia-Yan/Transkun/tree/main
+#We assume the data contains only the same sampling rate 44100hz. 
+# #Therefore for the maestro dataset it is necessary to perform sampling rate conversion to 44100hz for the last two years (2017 and 2018) .
+
+
+
 def main():
     parser = argparse.ArgumentParser(description="Acquire and prepare the MAESTRO dataset.")
     parser.add_argument("--source", required=True, help="HTTP URL to a zip, or local directory path")

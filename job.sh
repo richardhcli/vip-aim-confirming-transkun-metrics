@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1 --cpus-per-task=16
 #SBATCH --nodes=1 --gpus-per-node=1 
 #SBATCH --mem=32G
-#SBATCH --time=00:30:00
+#SBATCH --time=02:00:00
 #SBATCH --job-name transkun_job
 #SBATCH --output=/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/output/myjob.out
 #SBATCH --error=/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/output/myjob.err
@@ -45,8 +45,8 @@
 # 1. VARIABLES & LOGGING SETUP
 # ==========================================
 
-REBUILD_ENV=true
-UPDATE_ENV=true 
+REBUILD_ENV=false
+UPDATE_ENV=false 
 
 WORKING_DIR=$(pwd)
 OUTPUT_DIR="$WORKING_DIR/output"
