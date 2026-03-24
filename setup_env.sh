@@ -58,8 +58,8 @@ while [[ "$#" -gt 0 ]]; do
         -e|--env-file) ENVIRONMENT_FILE="$2"; shift 2 ;;
         -r|--req-file) REQ_FILE="$2"; shift 2 ;;
         -l|--install-log) INSTALL_LOG="$2"; shift 2 ;;
-        -b|--rebuild) REBUILD_ENV=true; shift 1 ;;
-        --noupdate) UPDATE_ENV=false; shift 1 ;;
+        -b|--is-rebuild) REBUILD_ENV=$2; shift 2 ;;
+        --is-update-env) UPDATE_ENV=$2; shift 2 ;;
         --help) grep '^#' "$0" | sed 's/^# \?//' | head -n 35; return 0 2>/dev/null || exit 0 ;;
         *) echo "Unknown parameter passed: $1"; return 1 2>/dev/null || exit 1 ;;
     esac
@@ -157,7 +157,7 @@ if ([ "$REBUILD_ENV" = true ] || [ -f "$ENVIRONMENT_FILE" ]) && ([ "$UPDATE_ENV"
     fi
 fi
 
-if ["$UPDATE_ENV" == false ]; then 
+if [ "$UPDATE_ENV" == false ]; then 
     log_info "Update flag set to false. Skipping environment.yml sync. "
 fi
 

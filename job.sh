@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --account yunglu
-#SBATCH --partition=a10
+#SBATCH --partition=a100-80gb
 #SBATCH --qos=standby
 #SBATCH --ntasks=1 --cpus-per-task=16
 #SBATCH --nodes=1 --gpus-per-node=1 
 #SBATCH --mem=32G
-#SBATCH --time=02:00:00
+#SBATCH --time=01:00:00
 #SBATCH --job-name transkun_job
 #SBATCH --output=/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/output/myjob.out
 #SBATCH --error=/scratch/gilbreth/li5042/transkun/vip-aim-confirming-transkun-metrics/output/myjob.err
@@ -45,8 +45,8 @@
 # 1. VARIABLES & LOGGING SETUP
 # ==========================================
 
-REBUILD_ENV=false
-UPDATE_ENV=false 
+REBUILD_ENV=true
+UPDATE_ENV=true 
 
 WORKING_DIR=$(pwd)
 OUTPUT_DIR="$WORKING_DIR/output"
@@ -61,9 +61,14 @@ STATUS_LOG="$OUTPUT_DIR/job_status.log"
 ERROR_LOG="$OUTPUT_DIR/error.log"
 
 mkdir -p "$OUTPUT_DIR" 
+touch "$STATUS_LOG" "$ERROR_LOG"
 
 log_msg() {
-    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" | tee -a "$STATUS_LOG"
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" | tee -a "$STATUS_LOG" #logs to both console and status log. 
+}
+
+log_err() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] ERROR: $1" | tee -a "$STATUS_LOG" "$ERROR_LOG" >&2
 }
 
 echo "========================================" > "$STATUS_LOG"
@@ -90,23 +95,25 @@ export MPLCONFIGDIR="$XDG_CONFIG_HOME/matplotlib"
 # WHY: Relying on the script's internal defaults (for venv, logs, reqs) 
 # keeps this file pristine. We only need to pass the custom scratch directory 
 # to be used as the caching home-dir.
+
+cd "$WORKING_DIR"
+
 if [ "$REBUILD_ENV" = true ]; then
     log_msg "Rebuild flag detected. Forcing environment rebuild."
-    source setup_env.sh --home-dir "$HOME_DIR_ENV" --rebuild
 else
-    if [ "$UPDATE_ENV" = false ]; then
-        log_msg "Update flag set to false. Skipping environment.yml sync. Will create environment if it doesn't exist, but won't check for updates."
-        source setup_env.sh --home-dir "$HOME_DIR_ENV" --noupdate
-    else
-        log_msg "Environment update enabled. Will sync environment with environment.yml if it exists."
-        source setup_env.sh --home-dir "$HOME_DIR_ENV"
-    fi
+    log_msg "No rebuild flag. Will attempt to reuse existing environment if found."
 fi
 
+if [ "$UPDATE_ENV" = true ]; then
+    log_msg "Environment update enabled. Will sync environment with environment.yml if it exists."
+else
+    log_msg "Environment update disabled. Will not sync environment with environment.yml."
+fi
 
+source setup_env.sh --home-dir "$HOME_DIR_ENV" --is-rebuild "$REBUILD_ENV" --is-update-env "$UPDATE_ENV"
 
 if [ $? -ne 0 ]; then
-    log_msg "CRITICAL: Environment setup failed. Aborting job."
+    log_err "CRITICAL: Environment setup failed with exit code $?. HOME_DIR=$HOME_DIR_ENV. REBUILD_ENV=$REBUILD_ENV. UPDATE_ENV=$UPDATE_ENV. Check $ERROR_LOG for details."
     source teardown_env.sh 2>/dev/null
     return 1 2>/dev/null || exit 1
 fi
@@ -119,7 +126,7 @@ log_msg "Initiating testing pipeline..."
 source testing_maestro.sh
 
 if [ $? -ne 0 ]; then
-    log_msg "ERROR: Pipeline halted due to previous errors. Check $ERROR_LOG."
+    log_err "ERROR: Pipeline halted due to previous errors. Check $ERROR_LOG for details."
     source teardown_env.sh 2>/dev/null
     return 1 2>/dev/null || exit 1
 fi
